@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LightJudge</title>
+</head>
+<body>
+  <h1>LightJudge</h1>
+
+  <h2>Список задач</h2>
+  <ul id="taskList"></ul>
+
+  <h2>Отправка решения</h2>
+  <form id="submitForm">
+    <input type="text" name="username" placeholder="Username" required>
+    <select name="problem_id" id="problemSelect" required></select>
+    <input type="file" name="code" required>
+    <button type="submit">Submit</button>
+  </form>
+
+  <h2>Leaderboard</h2>
+  <ul id="leaderboard"></ul>
+
+  <script>
+    // Загружаем задачи с сервера
+    async function loadTasks() {
+      const res = await fetch("http://127.0.0.1:8000/tasks/");
+      const tasks = await res.json();
+      const list = document.getElementById("taskList");
+      const select = document.getElementById("problemSelect");
+      list.innerHTML = "";
+      select.innerHTML = "";
+
+      tasks.forEach(t => {
+        // Выводим задачи в список
+        const li = document.createElement("li");
+        const title = document.createElement("h3");
+        title.textContent = `${t.id}. ${t.title}`;
+        li.appendChild(title);
+
+        // Описание задачи с переносами строк
+        const desc = document.createElement("pre"); // <--- ключевой момент
+        desc.textContent = t.description;
+        li.appendChild(desc);
+
+        list.appendChild(li);
+
+        // Добавляем в выпадающий список для формы
+        const option = document.createElement("option");
+        option.value = t.id;
+        option.textContent = `${t.id}. ${t.title}`;
+        select.appendChild(option);
+      });
+    }
+
+    // Отправка кода
+    document.getElementById("submitForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const res = await fetch("http://127.0.0.1:8000/submit/", {method: "POST", body: form});
+      const data = await res.json();
+      if (data.status === "success") {
+        alert(`Процент правильности: ${data.score}% (${data.passed}/${data.total})`);
+      } else if (data.status === "compile_error") {
+        alert("Ошибка компиляции:\n" + data.message);
+      } else {
+        alert(JSON.stringify(data));
+      }
+      loadLeaderboard();
+    };
+
+    // Загружаем таблицу лидеров
+    async function loadLeaderboard() {
+      const res = await fetch("http://127.0.0.1:8000/leaderboard/");
+      const data = await res.json();
+      const list = document.getElementById("leaderboard");
+      list.innerHTML = "";
+      data.forEach(u => {
+        const li = document.createElement("li");
+        li.textContent = `${u.username}: ${u.solved_count}`;
+        list.appendChild(li);
+      });
+    }
+
+    // Инициализация
+    loadTasks();
+    loadLeaderboard();
+  </script>
+</body>
+</html>
