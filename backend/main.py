@@ -97,7 +97,7 @@ Giriş
             {"input": "8 4\n", "output": "262549"},
             {"input": "9 5\n", "output": "7807853"},
         ]
-    }
+    },
     {
         "id": 4,
         "title": "Хороший массив? (Лёгкая версия) | Yaxşı massiv? (Asan versiya)",
@@ -264,3 +264,4 @@ def get_tasks():
 #sqlite3 database.db
 
 #python -m uvicorn backend.main:app --reload
+
