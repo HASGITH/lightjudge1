@@ -143,7 +143,7 @@ NO
             {"input": """
 5
 5 4 3 3 5
-            """, "output": "YES"},
+            """, "output": "NO"},
             {"input": """
 3
 2 1 2
@@ -264,4 +264,5 @@ def get_tasks():
 #sqlite3 database.db
 
 #python -m uvicorn backend.main:app --reload
+
 
