@@ -12,34 +12,34 @@
   <div class="container">
     <div class="header" style="grid-column:1/-1">
       <div class="brand">LightJudge</div>
-      <div class="footer-note">Лёгкий онлайн-тестер задач — быстрый UI для ваших контестов</div>
+      <div class="footer-note">A simple online problem tester — a fast UI for your contests</div>
     </div>
 
     <aside class="card">
-      <h3>Задачи</h3>
+      <h3>Problems</h3>
       <div id="taskList" class="task-list" aria-live="polite"></div>
     </aside>
 
     <main class="card task-detail" id="taskDetail" aria-live="polite">
-      <h2 id="taskTitle">Выберите задачу</h2>
+      <h2 id="taskTitle">Select a problem</h2>
       <pre id="taskDesc" style="white-space:pre-wrap;color:var(--muted);min-height:120px"></pre>
 
       <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <input id="username" placeholder="Username" style="padding:8px;border-radius:6px;border:1px solid #e6eefc;width:220px" />
-        <select id="problemSelect" aria-label="Выбор задачи" style="padding:8px;border-radius:6px;border:1px solid #e6eefc">
-          <option value="">Выберите задачу</option>
+        <select id="problemSelect" aria-label="Select a problem" style="padding:8px;border-radius:6px;border:1px solid #e6eefc">
+          <option value="">Select a problem</option>
         </select>
-        <button id="fillExample" class="btn ghost">Пример кода</button>
+        <button id="fillExample" class="btn ghost">Code example</button>
       </div>
 
       <div style="margin-top:12px">
-        <label style="display:block;margin-bottom:6px;font-weight:600">Код (C++)</label>
+        <label style="display:block;margin-bottom:6px;font-weight:600">Code (C++)</label>
         <textarea id="code" rows="12" style="width:100%;padding:12px;border-radius:10px;border:1px solid #e6eefc;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "consolas", "Liberation Mono", monospace;"></textarea>
       </div>
 
       <div class="controls" style="margin-top:12px">
-        <button id="submitBtn" class="btn">Отправить</button>
-        <button id="downloadBtn" class="btn ghost">Скачать .cpp</button>
+        <button id="submitBtn" class="btn">Submit</button>
+        <button id="downloadBtn" class="btn ghost">Download .cpp</button>
       </div>
 
       <div style="margin-top:14px">
@@ -52,7 +52,7 @@
       <h3>Leaderboard</h3>
       <ul id="leaderboard" class="leaderboard" aria-live="polite"></ul>
 
-      <h4 style="margin-top:14px">Последние отправки</h4>
+      <h4 style="margin-top:14px">Last submitions</h4>
       <div id="subs" style="font-size:13px;color:var(--muted);max-height:36vh;overflow:auto"></div>
     </aside>
   </div>
@@ -68,7 +68,7 @@
         window._tasks = tasks;
         const list = document.getElementById("taskList");
         const select = document.getElementById("problemSelect");
-        list.innerHTML = ""; select.innerHTML = "<option value=''>Выберите задачу</option>";
+        list.innerHTML = ""; select.innerHTML = "<option value=''>Select a problem</option>";
         tasks.forEach(t => {
           const item = document.createElement("div");
           item.className = "task-item";
@@ -83,8 +83,8 @@
           select.appendChild(opt);
         });
       } catch (err) {
-        console.error("Ошибка загрузки задач:", err);
-        document.getElementById("taskList").textContent = "Не удалось загрузить задачи";
+        console.error("Error loading problems:", err);
+        document.getElementById("taskList").textContent = "Failed to load problems";
       }
     }
 
@@ -92,7 +92,7 @@
       const t = (window._tasks || []).find(x => x.id == id);
       if (!t) return;
       document.getElementById("taskTitle").textContent = `${t.id}. ${t.title}`;
-      document.getElementById("taskDesc").textContent = t.description || "(Описание отсутствует)";
+      document.getElementById("taskDesc").textContent = t.description || "(Description not available)";
       document.getElementById("problemSelect").value = id;
     }
 
@@ -121,8 +121,8 @@ int main() {
           list.appendChild(li);
         });
       } catch (err) {
-        console.error("Ошибка загрузки лидеров:", err);
-        document.getElementById("leaderboard").textContent = "Не удалось загрузить";
+        console.error("Error loading leaderboard:", err);
+        document.getElementById("leaderboard").textContent = "Failed to load";
       }
     }
 
@@ -130,9 +130,9 @@ int main() {
       const username = document.getElementById("username").value.trim();
       const problem_id = document.getElementById("problemSelect").value;
       const code = document.getElementById("code").value;
-      if (!username) { alert("Введите username"); return; }
-      if (!problem_id) { alert("Выберите задачу"); return; }
-      if (!code.trim()) { alert("Код пуст"); return; }
+      if (!username) { alert("Enter username"); return; }
+      if (!problem_id) { alert("Select a problem"); return; }
+      if (!code.trim()) { alert("Code is empty"); return; }
 
       const form = new FormData();
       form.append("username", username);
@@ -143,26 +143,26 @@ int main() {
       const progressBar = document.getElementById("progressBar");
       const result = document.getElementById("result");
       progressBar.style.width = "10%";
-      result.innerHTML = "Отправка...";
+      result.innerHTML = "Submitting...";
 
       try {
         const res = await fetch(API_BASE + "/submit/", { method: "POST", body: form });
         const data = await res.json();
         if (data.status === "success") {
           progressBar.style.width = "100%";
-          result.innerHTML = `Результат: <strong>${data.score}%</strong> (${data.passed}/${data.total})`;
+          result.innerHTML = `Result: <strong>${data.score}%</strong> (${data.passed}/${data.total})`;
           appendSubmission(username, problem_id, data.score);
         } else if (data.status === "compile_error") {
           progressBar.style.width = "0%";
-          result.innerHTML = `<div style="color:var(--danger);font-weight:600">Ошибка компиляции</div><pre style="white-space:pre-wrap;color:var(--muted)">${escapeHtml(data.message)}</pre>`;
+          result.innerHTML = `<div style="color:var(--danger);font-weight:600">Compilation Error</div><pre style="white-space:pre-wrap;color:var(--muted)">${escapeHtml(data.message)}</pre>`;
         } else {
           progressBar.style.width = "0%";
           result.textContent = JSON.stringify(data);
         }
       } catch (err) {
-        console.error("Ошибка отправки решения:", err);
+        console.error("Failed to submit solution:", err);
         progressBar.style.width = "0%";
-        result.textContent = "Сетевая ошибка при отправке";
+        result.textContent = "Network error while submitting";
       } finally {
         await loadLeaderboard();
       }
@@ -200,3 +200,4 @@ int main() {
   </script>
 </body>
 </html>
+
