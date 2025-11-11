@@ -1,90 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>LightJudge</title>
+  <link rel="stylesheet" href="/frontend/style.css" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <h1>LightJudge</h1>
+  <div class="container">
+    <div class="header" style="grid-column:1/-1">
+      <div class="brand">LightJudge</div>
+      <div class="footer-note">Лёгкий онлайн-тестер задач — быстрый UI для ваших контестов</div>
+    </div>
 
-  <h2>Список задач</h2>
-  <ul id="taskList"></ul>
+    <aside class="card">
+      <h3>Задачи</h3>
+      <div id="taskList" class="task-list" aria-live="polite"></div>
+    </aside>
 
-  <h2>Отправка решения</h2>
-  <form id="submitForm">
-    <input type="text" name="username" placeholder="Username" required>
-    <select name="problem_id" id="problemSelect" required></select>
-    <input type="file" name="code" required>
-    <button type="submit">Submit</button>
-  </form>
+    <main class="card task-detail" id="taskDetail" aria-live="polite">
+      <h2 id="taskTitle">Выберите задачу</h2>
+      <pre id="taskDesc" style="white-space:pre-wrap;color:var(--muted);min-height:120px"></pre>
 
-  <h2>Leaderboard</h2>
-  <ul id="leaderboard"></ul>
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="username" placeholder="Username" style="padding:8px;border-radius:6px;border:1px solid #e6eefc;width:220px" />
+        <select id="problemSelect" aria-label="Выбор задачи" style="padding:8px;border-radius:6px;border:1px solid #e6eefc">
+          <option value="">Выберите задачу</option>
+        </select>
+        <button id="fillExample" class="btn ghost">Пример кода</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <label style="display:block;margin-bottom:6px;font-weight:600">Код (C++)</label>
+        <textarea id="code" rows="12" style="width:100%;padding:12px;border-radius:10px;border:1px solid #e6eefc;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "consolas", "Liberation Mono", monospace;"></textarea>
+      </div>
+
+      <div class="controls" style="margin-top:12px">
+        <button id="submitBtn" class="btn">Отправить</button>
+        <button id="downloadBtn" class="btn ghost">Скачать .cpp</button>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="progress" aria-hidden="true"><i id="progressBar" style="width:0%"></i></div>
+        <div id="result" style="margin-top:10px"></div>
+      </div>
+    </main>
+
+    <aside class="card right-col">
+      <h3>Leaderboard</h3>
+      <ul id="leaderboard" class="leaderboard" aria-live="polite"></ul>
+
+      <h4 style="margin-top:14px">Последние отправки</h4>
+      <div id="subs" style="font-size:13px;color:var(--muted);max-height:36vh;overflow:auto"></div>
+    </aside>
+  </div>
 
   <script>
-    const API_BASE = ""; // пусто, так как фронтенд и бэкенд на одном домене
+    // API_BASE оставляем пустым чтобы использовать тот же хост/порт
+    const API_BASE = "";
 
-    // Загружаем задачи с сервера
     async function loadTasks() {
       try {
         const res = await fetch(API_BASE + "/tasks/");
         const tasks = await res.json();
+        window._tasks = tasks;
         const list = document.getElementById("taskList");
         const select = document.getElementById("problemSelect");
-        list.innerHTML = "";
-        select.innerHTML = "";
-
+        list.innerHTML = ""; select.innerHTML = "<option value=''>Выберите задачу</option>";
         tasks.forEach(t => {
-          // Список задач
-          const li = document.createElement("li");
-          const title = document.createElement("h3");
-          title.textContent = `${t.id}. ${t.title}`;
-          li.appendChild(title);
+          const item = document.createElement("div");
+          item.className = "task-item";
+          item.tabIndex = 0;
+          item.innerHTML = `<h4>${t.id}. ${t.title}</h4><p>${t.description ? t.description.slice(0,160) : ""}</p>`;
+          item.onclick = () => selectTask(t.id);
+          item.onkeypress = (e) => { if (e.key === "Enter") selectTask(t.id); };
+          list.appendChild(item);
 
-          const desc = document.createElement("pre");
-          desc.textContent = t.description;
-          li.appendChild(desc);
-
-          list.appendChild(li);
-
-          // Выпадающий список для отправки решения
-          const option = document.createElement("option");
-          option.value = t.id;
-          option.textContent = `${t.id}. ${t.title}`;
-          select.appendChild(option);
+          const opt = document.createElement("option");
+          opt.value = t.id; opt.textContent = `${t.id}. ${t.title}`;
+          select.appendChild(opt);
         });
       } catch (err) {
         console.error("Ошибка загрузки задач:", err);
+        document.getElementById("taskList").textContent = "Не удалось загрузить задачи";
       }
     }
 
-    // Отправка кода
-    document.getElementById("submitForm").onsubmit = async (e) => {
-      e.preventDefault();
-      const form = new FormData(e.target);
+    function selectTask(id) {
+      const t = (window._tasks || []).find(x => x.id == id);
+      if (!t) return;
+      document.getElementById("taskTitle").textContent = `${t.id}. ${t.title}`;
+      document.getElementById("taskDesc").textContent = t.description || "(Описание отсутствует)";
+      document.getElementById("problemSelect").value = id;
+    }
 
-      try {
-        const res = await fetch(API_BASE + "/submit/", {
-          method: "POST",
-          body: form
-        });
-        const data = await res.json();
-
-        if (data.status === "success") {
-          alert(`Процент правильности: ${data.score}% (${data.passed}/${data.total})`);
-        } else if (data.status === "compile_error") {
-          alert("Ошибка компиляции:\n" + data.message);
-        } else {
-          alert(JSON.stringify(data));
-        }
-        loadLeaderboard();
-      } catch (err) {
-        console.error("Ошибка отправки решения:", err);
-        alert("Ошибка отправки решения. Проверьте консоль.");
-      }
+    document.getElementById("fillExample").onclick = () => {
+      document.getElementById("code").value =
+`#include <bits/stdc++.h>
+using namespace std;
+int main() {
+  long long a, b;
+  if(!(cin >> a >> b)) return 0;
+  cout << (a + b);
+  return 0;
+}
+`;
     };
 
-    // Загружаем таблицу лидеров
     async function loadLeaderboard() {
       try {
         const res = await fetch(API_BASE + "/leaderboard/");
@@ -98,7 +122,76 @@
         });
       } catch (err) {
         console.error("Ошибка загрузки лидеров:", err);
+        document.getElementById("leaderboard").textContent = "Не удалось загрузить";
       }
+    }
+
+    document.getElementById("submitBtn").onclick = async () => {
+      const username = document.getElementById("username").value.trim();
+      const problem_id = document.getElementById("problemSelect").value;
+      const code = document.getElementById("code").value;
+      if (!username) { alert("Введите username"); return; }
+      if (!problem_id) { alert("Выберите задачу"); return; }
+      if (!code.trim()) { alert("Код пуст"); return; }
+
+      const form = new FormData();
+      form.append("username", username);
+      form.append("problem_id", problem_id);
+      const blob = new Blob([code], { type: "text/x-c++src" });
+      form.append("code", blob, "solution.cpp");
+
+      const progressBar = document.getElementById("progressBar");
+      const result = document.getElementById("result");
+      progressBar.style.width = "10%";
+      result.innerHTML = "Отправка...";
+
+      try {
+        const res = await fetch(API_BASE + "/submit/", { method: "POST", body: form });
+        const data = await res.json();
+        if (data.status === "success") {
+          progressBar.style.width = "100%";
+          result.innerHTML = `Результат: <strong>${data.score}%</strong> (${data.passed}/${data.total})`;
+          appendSubmission(username, problem_id, data.score);
+        } else if (data.status === "compile_error") {
+          progressBar.style.width = "0%";
+          result.innerHTML = `<div style="color:var(--danger);font-weight:600">Ошибка компиляции</div><pre style="white-space:pre-wrap;color:var(--muted)">${escapeHtml(data.message)}</pre>`;
+        } else {
+          progressBar.style.width = "0%";
+          result.textContent = JSON.stringify(data);
+        }
+      } catch (err) {
+        console.error("Ошибка отправки решения:", err);
+        progressBar.style.width = "0%";
+        result.textContent = "Сетевая ошибка при отправке";
+      } finally {
+        await loadLeaderboard();
+      }
+    };
+
+    document.getElementById("downloadBtn").onclick = () => {
+      const code = document.getElementById("code").value;
+      const blob = new Blob([code], { type: "text/x-c++src" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "solution.cpp";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    function appendSubmission(username, problemId, score) {
+      const subs = document.getElementById("subs");
+      const entry = document.createElement("div");
+      const time = new Date().toLocaleTimeString();
+      entry.innerHTML = `<strong>${username}</strong> — #${problemId} — ${score}% <span style="color:var(--muted);font-size:12px">(${time})</span>`;
+      subs.prepend(entry);
+      if (subs.children.length > 50) subs.removeChild(subs.lastChild);
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]); });
     }
 
     // Инициализация
