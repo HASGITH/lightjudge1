@@ -44,8 +44,8 @@ document.getElementById("submitBtn").onclick = async ()=>{
   const username = document.getElementById("username").value.trim();
   const problem_id = document.getElementById("problemSelect").value;
   const code = document.getElementById("code").value;
-  if(!username){alert("Введите username");return}
-  if(!problem_id){alert("Выберите задачу");return}
+  if(!username){alert("Enter username");return}
+  if(!problem_id){alert("Select a problem");return}
   const form = new FormData();
   form.append("username", username);
   form.append("problem_id", problem_id);
@@ -54,25 +54,26 @@ document.getElementById("submitBtn").onclick = async ()=>{
 
   const progressBar = document.getElementById("progressBar");
   progressBar.style.width = "10%";
-  document.getElementById("result").textContent = "Отправка...";
+  document.getElementById("result").textContent = "Submitting...";
   try{
     const res = await fetch(API_BASE + "/submit/", {method:"POST", body: form});
     const data = await res.json();
     if(data.status === "success"){
       progressBar.style.width = "100%";
-      document.getElementById("result").innerHTML = `Результат: <strong>${data.score}%</strong> (${data.passed}/${data.total})`;
+      document.getElementById("result").innerHTML = `Result: <strong>${data.score}%</strong> (${data.passed}/${data.total})`;
     }else if(data.status === "compile_error"){
       progressBar.style.width = "0%";
-      document.getElementById("result").innerHTML = `<span style="color:${'#dc2626'}">Ошибка компиляции</span><pre style="white-space:pre-wrap;color:var(--muted)">${data.message}</pre>`;
+      document.getElementById("result").innerHTML = `<span style="color:${'#dc2626'}">Compilation Error</span><pre style="white-space:pre-wrap;color:var(--muted)">${data.message}</pre>`;
     }else{
       document.getElementById("result").textContent = JSON.stringify(data);
     }
   }catch(err){
     console.error(err);
-    document.getElementById("result").textContent = "Ошибка сети при отправке";
+    document.getElementById("result").textContent = "Network error during submission";
   } finally{
     loadLeaderboard();
   }
 };
 
 loadTasks(); loadLeaderboard();
+
